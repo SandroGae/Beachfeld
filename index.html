@@ -1,3 +1,259 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Beachfeld Aussetzer-Tracker</title>
+    <!-- Um mögliche Pfadprobleme bei GitHub Pages zu beheben -->
+    <base href="/Beachfeld/">
+    <style>
+        /* CSS-STILE FÜR OPTIK UND RESPONSIVENESS */
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 600px;
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #ecf0f1;
+            padding-bottom: 10px;
+        }
+
+        /* --- Login-Bereich --- */
+        #login-section {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            padding: 20px;
+            border: 1px dashed #bdc3c7;
+            border-radius: 8px;
+            text-align: center;
+        }
+        select, button {
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.1s;
+        }
+        select {
+            border: 1px solid #ccc;
+            background-color: #f9f9f9;
+        }
+        .login-btn {
+            background-color: #3498db;
+            color: white;
+            border: none;
+        }
+        .login-btn:hover {
+            background-color: #2980b9;
+            transform: translateY(-1px);
+        }
+        #login-message {
+            color: #e74c3c;
+            font-weight: bold;
+            display: none;
+        }
+        
+        /* --- App-Bereich --- */
+        #app-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #ecf0f1;
+            padding-bottom: 15px;
+        }
+        .logout-btn {
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+        }
+        .logout-btn:hover {
+            background-color: #c0392b;
+        }
+
+        /* --- Tabelle --- */
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0 10px;
+            margin-top: 10px;
+        }
+        th, td {
+            text-align: left;
+            padding: 15px;
+        }
+        th {
+            background-color: #f1f1f1;
+            color: #555;
+            cursor: pointer;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        tr {
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+        tr:nth-child(odd) {
+            background-color: #fcfcfc;
+        }
+        .increase-btn {
+            background-color: #2ecc71;
+            color: white;
+            border: none;
+            padding: 10px 18px;
+        }
+        .increase-btn:hover {
+            background-color: #27ae60;
+        }
+        
+        /* --- Nachrichtenbereich --- */
+        .message {
+            padding: 10px;
+            margin-bottom: 15px;
+            border-radius: 6px;
+            font-weight: bold;
+            display: none;
+            text-align: center;
+        }
+        .message.error {
+            background-color: #f9e3e3;
+            color: #c0392b;
+            border: 1px solid #c0392b;
+        }
+        .message.success {
+            background-color: #e3f9e3;
+            color: #27ae60;
+            border: 1px solid #27ae60;
+        }
+
+        /* Responsive Anpassungen */
+        @media (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+            .container {
+                padding: 20px 15px;
+            }
+            #app-header {
+                flex-direction: column;
+                gap: 10px;
+                text-align: center;
+            }
+            th, td {
+                padding: 10px;
+                font-size: 14px;
+            }
+            table, thead, tbody, th, td, tr { 
+                display: block; 
+            }
+            thead tr { 
+                position: absolute;
+                top: -9999px;
+                left: -9999px;
+            }
+            tr {
+                border: 1px solid #ccc;
+                margin-bottom: 20px;
+                padding: 10px 0;
+            }
+            td {
+                border: none;
+                border-bottom: 1px solid #eee;
+                position: relative;
+                padding-left: 50%;
+                text-align: right;
+            }
+            td:before {
+                position: absolute;
+                top: 50%;
+                left: 6px;
+                width: 45%;
+                padding-right: 10px;
+                white-space: nowrap;
+                content: attr(data-label);
+                font-weight: bold;
+                text-align: left;
+                transform: translateY(-50%);
+            }
+            td:nth-of-type(1):before { content: "Name:"; }
+            td:nth-of-type(2):before { content: "Aussetzer:"; }
+            td:nth-of-type(3):before { content: "Aktion:"; }
+            .increase-btn {
+                width: 100%;
+                margin-top: 5px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Beachfeld Aussetzer-Tracker 🏐</h1>
+
+    <!-- Meldungsbereich -->
+    <div id="message-area" class="message error"></div>
+
+    <!-- 1. LOGIN-BEREICH -->
+    <section id="login-section">
+        <h2>Anmelden</h2>
+        <div id="login-message"></div>
+        <select id="name-select">
+            <option value="">-- Wähle deinen Namen --</option>
+            <option value="Sandro">Sandro</option>
+            <option value="Norman">Norman</option>
+            <option value="Florian">Florian</option>
+            <option value="Felix">Felix</option>
+            <option value="Elias">Elias</option>
+        </select>
+        <button class="login-btn" onclick="login()">Anmelden</button>
+    </section>
+
+    <!-- 2. ANWENDUNGS-BEREICH (wird nach Login sichtbar) -->
+    <section id="app-section" style="display:none;">
+        <div id="app-header">
+            <div>
+                Eingeloggt als: <strong id="current-user-display"></strong>
+            </div>
+            <button class="logout-btn" onclick="logout()">Abmelden</button>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th onclick="sortTable(0)">Name ↕</th>
+                    <th onclick="sortTable(1)">Aussetzer ↕</th>
+                    <th>Aktion</th>
+                </tr>
+            </thead>
+            <tbody id="score-table-body">
+                <!-- Tabelle wird durch JavaScript gefüllt -->
+            </tbody>
+        </table>
+    </section>
+</div>
+
+<!-- JAVASCRIPT LOGIK -->
 <script>
     // --- Konfiguration und Initialisierung ---
     const USERS = ["Sandro", "Norman", "Florian", "Felix", "Elias"]; 
@@ -6,13 +262,13 @@
         return acc;
     }, {});
     
-    // Key für LocalStorage (Du kannst hier "_saison2" oder Ähnliches hinzufügen, wenn du die Zähler auf 0 setzen willst)
+    // Key für LocalStorage 
     const STORAGE_KEY_USER = 'aussetzer_tracker_user';
     const STORAGE_KEY_SCORES = 'aussetzer_tracker_scores';
     const STORAGE_KEY_LAST_UPDATE = 'aussetzer_tracker_last_update';
     
     let currentUser = null;
-    let currentSortColumn = 1;  
+    let currentSortColumn = 1; 
     let currentSortDirection = 'desc'; 
 
     // --- LocalStorage Funktionen ---
@@ -40,18 +296,15 @@
 
     // --- Anmelde- und UI-Funktionen ---
     
-    // Wichtig: Diese Funktion speichert den Namen des eingeloggten Benutzers im localStorage
     function saveCurrentUser(name) {
         localStorage.setItem(STORAGE_KEY_USER, name);
     }
     
-    // Wichtig: Diese Funktion löscht den Namen des eingeloggten Benutzers aus dem localStorage
     function deleteCurrentUser() {
         localStorage.removeItem(STORAGE_KEY_USER);
     }
 
     function checkLogin() {
-        // Bei der Initialisierung den gespeicherten Benutzer abrufen
         const storedUser = localStorage.getItem(STORAGE_KEY_USER); 
         
         // Prüfen, ob ein gültiger Benutzer gespeichert wurde
@@ -79,7 +332,7 @@
             return;
         }
 
-        // Speichere den ausgewählten Namen, damit er beim nächsten Mal automatisch geladen wird
+        // Speichere den ausgewählten Namen für den automatischen Login
         saveCurrentUser(selectedName);
         checkLogin();
     }
@@ -108,13 +361,9 @@
     // --- Counter-Logik (mit Bestätigungs-Dialog) ---
     
     function increaseCounter(name) {
-        if (!currentUser) {
-            showMessage('Fehler: Du bist nicht angemeldet.', 'error');
-            return;
-        }
-
-        if (name !== currentUser) {
-            showMessage('Du darfst nur deinen eigenen Counter erhöhen!', 'error');
+        if (!currentUser || name !== currentUser) {
+            // Sollte durch die UI verhindert werden, aber als zusätzliche Sicherheit
+            showMessage('Fehler: Du darfst nur deinen eigenen Counter erhöhen!', 'error');
             return;
         }
 
@@ -123,10 +372,10 @@
         
         if (!confirmation) {
             showMessage('Vorgang abgebrochen.', 'error');
-            return; // Beende die Funktion, wenn der Benutzer auf "Abbrechen" klickt
+            return; 
         }
 
-        // --- 24h-Sperr-Logik (unverändert) ---
+        // --- 24h-Sperr-Logik ---
         const now = new Date().getTime();
         const lastUpdateTimes = getLastUpdateTimes();
         const lastTime = lastUpdateTimes[name] || 0;
@@ -138,7 +387,7 @@
             return;
         }
 
-        // Counter erhöhen
+        // Counter erhöhen und speichern
         const scores = getScores();
         scores[name] = (scores[name] || 0) + 1;
         saveScores(scores);
@@ -151,14 +400,14 @@
         renderTable();
     }
 
-    // --- Tabellen-Logik (unverändert) ---
+    // --- Tabellen-Logik ---
 
     function renderTable() {
         const scores = getScores();
         const tableBody = document.getElementById('score-table-body');
         tableBody.innerHTML = '';
         
-        // Daten für Sortierung vorbereiten: [Name, Score]
+        // Daten für Sortierung vorbereiten
         let data = Object.entries(scores).map(([name, score]) => [name, score]);
 
         // Sortierung anwenden
@@ -183,40 +432,52 @@
             // Zelle 1: Name
             const cellName = row.insertCell();
             cellName.textContent = name;
+            cellName.setAttribute('data-label', 'Name:');
             
             // Zelle 2: Aussetzer
             const cellScore = row.insertCell();
             cellScore.innerHTML = `Hat <strong>${score}</strong> mal ausgesetzt`;
+            cellScore.setAttribute('data-label', 'Aussetzer:');
             
             // Zelle 3: Aktion
             const cellAction = row.insertCell();
+            cellAction.setAttribute('data-label', 'Aktion:');
+            
             const button = document.createElement('button');
             button.className = 'increase-btn';
             button.textContent = `+1 für ${name}`;
             button.onclick = () => increaseCounter(name);
             
-            // Button nur für den eingeloggten Benutzer aktivieren
+            // Button nur für den eingeloggten Benutzer anzeigen und aktivieren
             if (currentUser === name) {
                 cellAction.appendChild(button);
             } else {
-                // Anderen Personen einen leeren Platz oder eine Meldung anzeigen
-                cellAction.innerHTML = 'Nur eigener Counter';
+                cellAction.innerHTML = '<span style="color: #95a5a6; font-size: 12px;">Nur eigener Counter</span>';
             }
         });
     }
     
     function sortTable(columnIndex) {
-        // Wenn die Spalte dieselbe ist, wechsel die Richtung
+        // Setze Sortierpfeile zurück
+        document.querySelectorAll('th').forEach(th => th.classList.remove('sorted-asc', 'sorted-desc'));
+
         if (columnIndex === currentSortColumn) {
             currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
         } else {
-            // Bei neuer Spalte, setze die Spalte und starte mit absteigender Sortierung (z.B. höchster Score zuerst)
             currentSortColumn = columnIndex;
-            currentSortDirection = columnIndex === 0 ? 'asc' : 'desc'; // Namen aufsteigend, Scores absteigend
+            currentSortDirection = columnIndex === 0 ? 'asc' : 'desc';
         }
+        
+        // Markiere die aktuelle Sortierspalte
+        const currentHeader = document.querySelectorAll('th')[columnIndex];
+        currentHeader.classList.add(`sorted-${currentSortDirection}`);
+        
         renderTable();
     }
 
     // --- Start der Anwendung ---
     window.onload = checkLogin;
 </script>
+
+</body>
+</html>
