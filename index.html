@@ -1,0 +1,222 @@
+<script>
+    // --- Konfiguration und Initialisierung ---
+    const USERS = ["Sandro", "Norman", "Florian", "Felix", "Elias"]; 
+    const INITIAL_SCORES = USERS.reduce((acc, name) => {
+        acc[name] = 0;
+        return acc;
+    }, {});
+    
+    // Key für LocalStorage (Du kannst hier "_saison2" oder Ähnliches hinzufügen, wenn du die Zähler auf 0 setzen willst)
+    const STORAGE_KEY_USER = 'aussetzer_tracker_user';
+    const STORAGE_KEY_SCORES = 'aussetzer_tracker_scores';
+    const STORAGE_KEY_LAST_UPDATE = 'aussetzer_tracker_last_update';
+    
+    let currentUser = null;
+    let currentSortColumn = 1; 
+    let currentSortDirection = 'desc'; 
+
+    // --- LocalStorage Funktionen ---
+    
+    function getScores() {
+        const storedScores = localStorage.getItem(STORAGE_KEY_SCORES);
+        if (storedScores) {
+            return JSON.parse(storedScores);
+        }
+        return INITIAL_SCORES;
+    }
+
+    function saveScores(scores) {
+        localStorage.setItem(STORAGE_KEY_SCORES, JSON.stringify(scores));
+    }
+
+    function getLastUpdateTimes() {
+        const storedTimes = localStorage.getItem(STORAGE_KEY_LAST_UPDATE);
+        return storedTimes ? JSON.parse(storedTimes) : {};
+    }
+
+    function saveLastUpdateTimes(times) {
+        localStorage.setItem(STORAGE_KEY_LAST_UPDATE, JSON.stringify(times));
+    }
+
+    // --- Anmelde- und UI-Funktionen ---
+    
+    // Wichtig: Diese Funktion speichert den Namen des eingeloggten Benutzers im localStorage
+    function saveCurrentUser(name) {
+        localStorage.setItem(STORAGE_KEY_USER, name);
+    }
+    
+    // Wichtig: Diese Funktion löscht den Namen des eingeloggten Benutzers aus dem localStorage
+    function deleteCurrentUser() {
+        localStorage.removeItem(STORAGE_KEY_USER);
+    }
+
+    function checkLogin() {
+        // Bei der Initialisierung den gespeicherten Benutzer abrufen
+        const storedUser = localStorage.getItem(STORAGE_KEY_USER); 
+        
+        // Prüfen, ob ein gültiger Benutzer gespeichert wurde
+        if (storedUser && USERS.includes(storedUser)) {
+            currentUser = storedUser;
+            document.getElementById('current-user-display').textContent = currentUser;
+            document.getElementById('login-section').style.display = 'none';
+            document.getElementById('app-section').style.display = 'block';
+            renderTable();
+        } else {
+            currentUser = null;
+            document.getElementById('login-section').style.display = 'block';
+            document.getElementById('app-section').style.display = 'none';
+        }
+        hideMessage();
+    }
+
+    function login() {
+        const selectedName = document.getElementById('name-select').value;
+        const loginMessage = document.getElementById('login-message');
+        
+        if (!selectedName) {
+            loginMessage.textContent = 'Bitte wähle deinen Namen aus!';
+            loginMessage.style.display = 'block';
+            return;
+        }
+
+        // Speichere den ausgewählten Namen, damit er beim nächsten Mal automatisch geladen wird
+        saveCurrentUser(selectedName);
+        checkLogin();
+    }
+
+    function logout() {
+        // Beim Abmelden den gespeicherten Benutzer löschen
+        deleteCurrentUser();
+        checkLogin();
+    }
+
+    function showMessage(text, type = 'error') {
+        const messageArea = document.getElementById('message-area');
+        messageArea.textContent = text;
+        messageArea.className = `message ${type}`;
+        messageArea.style.display = 'block';
+        
+        // Nachricht nach 5 Sekunden ausblenden
+        setTimeout(hideMessage, 5000);
+    }
+
+    function hideMessage() {
+        document.getElementById('message-area').style.display = 'none';
+        document.getElementById('login-message').style.display = 'none';
+    }
+
+    // --- Counter-Logik (mit Bestätigungs-Dialog) ---
+    
+    function increaseCounter(name) {
+        if (!currentUser) {
+            showMessage('Fehler: Du bist nicht angemeldet.', 'error');
+            return;
+        }
+
+        if (name !== currentUser) {
+            showMessage('Du darfst nur deinen eigenen Counter erhöhen!', 'error');
+            return;
+        }
+
+        // NEUE ANPASSUNG: Bestätigungsabfrage
+        const confirmation = confirm("Sicher, dass du den Counter erhöhen willst? Dies kann nicht rückgängig gemacht werden!");
+        
+        if (!confirmation) {
+            showMessage('Vorgang abgebrochen.', 'error');
+            return; // Beende die Funktion, wenn der Benutzer auf "Abbrechen" klickt
+        }
+
+        // --- 24h-Sperr-Logik (unverändert) ---
+        const now = new Date().getTime();
+        const lastUpdateTimes = getLastUpdateTimes();
+        const lastTime = lastUpdateTimes[name] || 0;
+        const timeDiff = now - lastTime;
+        const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
+
+        if (timeDiff < TWENTY_FOUR_HOURS_MS) {
+            showMessage("Hey, hier wird nicht gecheated! Du kannst den Counter nur einmal pro 24 Stunden erhöhen.", 'error');
+            return;
+        }
+
+        // Counter erhöhen
+        const scores = getScores();
+        scores[name] = (scores[name] || 0) + 1;
+        saveScores(scores);
+
+        // Letzte Updatezeit speichern
+        lastUpdateTimes[name] = now;
+        saveLastUpdateTimes(lastUpdateTimes);
+
+        showMessage(`${name} hat seinen Aussetzer-Counter auf ${scores[name]} erhöht.`, 'success');
+        renderTable();
+    }
+
+    // --- Tabellen-Logik (unverändert) ---
+
+    function renderTable() {
+        const scores = getScores();
+        const tableBody = document.getElementById('score-table-body');
+        tableBody.innerHTML = '';
+        
+        // Daten für Sortierung vorbereiten: [Name, Score]
+        let data = Object.entries(scores).map(([name, score]) => [name, score]);
+
+        // Sortierung anwenden
+        data.sort((a, b) => {
+            const valA = a[currentSortColumn];
+            const valB = b[currentSortColumn];
+
+            let comparison = 0;
+            if (currentSortColumn === 0) { // Nach Name sortieren (String)
+                comparison = valA.localeCompare(valB);
+            } else { // Nach Score sortieren (Zahl)
+                comparison = valA - valB;
+            }
+
+            return currentSortDirection === 'asc' ? comparison : comparison * -1;
+        });
+
+        // Tabelle füllen
+        data.forEach(([name, score]) => {
+            const row = tableBody.insertRow();
+            
+            // Zelle 1: Name
+            const cellName = row.insertCell();
+            cellName.textContent = name;
+            
+            // Zelle 2: Aussetzer
+            const cellScore = row.insertCell();
+            cellScore.innerHTML = `Hat <strong>${score}</strong> mal ausgesetzt`;
+            
+            // Zelle 3: Aktion
+            const cellAction = row.insertCell();
+            const button = document.createElement('button');
+            button.className = 'increase-btn';
+            button.textContent = `+1 für ${name}`;
+            button.onclick = () => increaseCounter(name);
+            
+            // Button nur für den eingeloggten Benutzer aktivieren
+            if (currentUser === name) {
+                cellAction.appendChild(button);
+            } else {
+                // Anderen Personen einen leeren Platz oder eine Meldung anzeigen
+                cellAction.innerHTML = 'Nur eigener Counter';
+            }
+        });
+    }
+    
+    function sortTable(columnIndex) {
+        // Wenn die Spalte dieselbe ist, wechsel die Richtung
+        if (columnIndex === currentSortColumn) {
+            currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+            // Bei neuer Spalte, setze die Spalte und starte mit absteigender Sortierung (z.B. höchster Score zuerst)
+            currentSortColumn = columnIndex;
+            currentSortDirection = columnIndex === 0 ? 'asc' : 'desc'; // Namen aufsteigend, Scores absteigend
+        }
+        renderTable();
+    }
+
+    // --- Start der Anwendung ---
+    window.onload = checkLogin;
+</script>
