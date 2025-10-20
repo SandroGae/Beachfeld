@@ -269,7 +269,6 @@
 
     // **NEU**: Geld-Einzug eigene Keys
     const STORAGE_KEY_MONEY = 'aussetzer_tracker_money';
-    const STORAGE_KEY_MONEY_LAST_UPDATE = 'aussetzer_tracker_money_last_update';
     
     let currentUser = null;
     let currentSortColumn = 1; 
@@ -302,14 +301,6 @@
     function saveMoneyCount(n) {
         localStorage.setItem(STORAGE_KEY_MONEY, String(n));
     }
-    function getMoneyLastUpdate() {
-        const v = localStorage.getItem(STORAGE_KEY_MONEY_LAST_UPDATE);
-        return v ? parseInt(v, 10) : 0;
-    }
-    function saveMoneyLastUpdate(ts) {
-        localStorage.setItem(STORAGE_KEY_MONEY_LAST_UPDATE, String(ts));
-    }
-
     // --- Anmelde- und UI-Funktionen ---
     function saveCurrentUser(name) {
         localStorage.setItem(STORAGE_KEY_USER, name);
@@ -402,35 +393,26 @@
         renderTable();
     }
 
-    // **NEU**: Geld-Einzug-Logik (nur Sandro)
+    // **NEU**: Geld-Einzug-Logik
     function increaseMoney() {
-        if (!currentUser || !(currentUser === 'Sandro' || currentUser === 'Sandro ')) {
-            showMessage('Nur Sandro darf diesen Counter erhoehen!', 'error');
+        if (!currentUser) {
+            showMessage('Bitte zuerst einloggen.', 'error');
             return;
         }
-
+    
         const confirmation = confirm("Sicher, dass du den Geld-Einzug erhoehen willst? Dies kann nicht rueckgaengig gemacht werden!");
         if (!confirmation) {
             showMessage('Vorgang abgebrochen.', 'error');
             return; 
         }
-
-        const now = new Date().getTime();
-        const lastTime = getMoneyLastUpdate();
-        const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
-
-        if (now - lastTime < TWENTY_FOUR_HOURS_MS) {
-            showMessage("Nur einmal pro 24 Stunden moeglich.", 'error');
-            return;
-        }
-
+    
         const n = getMoneyCount() + 1;
         saveMoneyCount(n);
-        saveMoneyLastUpdate(now);
-
+    
         showMessage(`Geld-Einzug wurde auf ${n} erhoeht.`, 'success');
         renderTable();
     }
+
 
     // --- Tabellen-Logik ---
     function renderTable() {
@@ -501,15 +483,15 @@
         const cellAction = moneyRow.insertCell();
         cellAction.setAttribute('data-label', 'Aktion:');
 
-        // Button nur für Sandro (akzeptiert optionales Leerzeichen)
-        if (currentUser === 'Sandro' || currentUser === 'Sandro ') {
+        // Button für alle zum Geld einziehen
+        if (currentUser) {
             const btn = document.createElement('button');
             btn.className = 'increase-btn';
             btn.textContent = '+1 Geld eingezogen';
             btn.onclick = increaseMoney;
             cellAction.appendChild(btn);
         } else {
-            cellAction.innerHTML = '<span style="color: #95a5a6; font-size: 12px;">Nur Sandro darf das aendern</span>';
+            cellAction.innerHTML = '<span style="color: #95a5a6; font-size: 12px;">Bitte einloggen</span>';
         }
     }
     
