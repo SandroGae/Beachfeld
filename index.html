@@ -262,17 +262,20 @@
         return acc;
     }, {});
     
-    // Key für LocalStorage 
+    // Keys für LocalStorage 
     const STORAGE_KEY_USER = 'aussetzer_tracker_user';
     const STORAGE_KEY_SCORES = 'aussetzer_tracker_scores';
     const STORAGE_KEY_LAST_UPDATE = 'aussetzer_tracker_last_update';
+
+    // **NEU**: Geld-Einzug eigene Keys
+    const STORAGE_KEY_MONEY = 'aussetzer_tracker_money';
+    const STORAGE_KEY_MONEY_LAST_UPDATE = 'aussetzer_tracker_money_last_update';
     
     let currentUser = null;
     let currentSortColumn = 1; 
     let currentSortDirection = 'desc'; 
 
     // --- LocalStorage Funktionen ---
-    
     function getScores() {
         const storedScores = localStorage.getItem(STORAGE_KEY_SCORES);
         if (storedScores) {
@@ -280,30 +283,40 @@
         }
         return INITIAL_SCORES;
     }
-
     function saveScores(scores) {
         localStorage.setItem(STORAGE_KEY_SCORES, JSON.stringify(scores));
     }
-
     function getLastUpdateTimes() {
         const storedTimes = localStorage.getItem(STORAGE_KEY_LAST_UPDATE);
         return storedTimes ? JSON.parse(storedTimes) : {};
     }
-
     function saveLastUpdateTimes(times) {
         localStorage.setItem(STORAGE_KEY_LAST_UPDATE, JSON.stringify(times));
     }
 
+    // **NEU**: Geld-Einzug Getter/Setter
+    function getMoneyCount() {
+        const v = localStorage.getItem(STORAGE_KEY_MONEY);
+        return v ? parseInt(v, 10) : 0;
+    }
+    function saveMoneyCount(n) {
+        localStorage.setItem(STORAGE_KEY_MONEY, String(n));
+    }
+    function getMoneyLastUpdate() {
+        const v = localStorage.getItem(STORAGE_KEY_MONEY_LAST_UPDATE);
+        return v ? parseInt(v, 10) : 0;
+    }
+    function saveMoneyLastUpdate(ts) {
+        localStorage.setItem(STORAGE_KEY_MONEY_LAST_UPDATE, String(ts));
+    }
+
     // --- Anmelde- und UI-Funktionen ---
-    
     function saveCurrentUser(name) {
         localStorage.setItem(STORAGE_KEY_USER, name);
     }
-    
     function deleteCurrentUser() {
         localStorage.removeItem(STORAGE_KEY_USER);
     }
-
     function checkLogin() {
         const storedUser = localStorage.getItem(STORAGE_KEY_USER); 
         
@@ -321,7 +334,6 @@
         }
         hideMessage();
     }
-
     function login() {
         const selectedName = document.getElementById('name-select').value;
         const loginMessage = document.getElementById('login-message');
@@ -331,14 +343,11 @@
             loginMessage.style.display = 'block';
             return;
         }
-
         // Speichere den ausgewählten Namen für den automatischen Login
         saveCurrentUser(selectedName);
         checkLogin();
     }
-
     function logout() {
-        // Beim Abmelden den gespeicherten Benutzer löschen
         deleteCurrentUser();
         checkLogin();
     }
@@ -348,34 +357,27 @@
         messageArea.textContent = text;
         messageArea.className = `message ${type}`;
         messageArea.style.display = 'block';
-        
-        // Nachricht nach 5 Sekunden ausblenden
         setTimeout(hideMessage, 5000);
     }
-
     function hideMessage() {
         document.getElementById('message-area').style.display = 'none';
         document.getElementById('login-message').style.display = 'none';
     }
 
     // --- Counter-Logik (mit Bestätigungs-Dialog) ---
-    
     function increaseCounter(name) {
         if (!currentUser || name !== currentUser) {
-            // Sollte durch die UI verhindert werden, aber als zusätzliche Sicherheit
-            showMessage('Fehler: Du darfst nur deinen eigenen Counter erhöhen!', 'error');
+            showMessage('Fehler: Du darfst nur deinen eigenen Counter erhoehen!', 'error');
             return;
         }
 
-        // NEUE ANPASSUNG: Bestätigungsabfrage
-        const confirmation = confirm("Sicher, dass du den Counter erhöhen willst? Dies kann nicht rückgängig gemacht werden!");
-        
+        const confirmation = confirm("Sicher, dass du den Counter erhoehen willst? Dies kann nicht rueckgaengig gemacht werden!");
         if (!confirmation) {
             showMessage('Vorgang abgebrochen.', 'error');
             return; 
         }
 
-        // --- 24h-Sperr-Logik ---
+        // 24h-Sperr-Logik
         const now = new Date().getTime();
         const lastUpdateTimes = getLastUpdateTimes();
         const lastTime = lastUpdateTimes[name] || 0;
@@ -383,7 +385,7 @@
         const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
 
         if (timeDiff < TWENTY_FOUR_HOURS_MS) {
-            showMessage("Hey, hier wird nicht gecheated! Du kannst den Counter nur einmal pro 24 Stunden erhöhen.", 'error');
+            showMessage("Hey, hier wird nicht gecheated! Du kannst den Counter nur einmal pro 24 Stunden erhoehen.", 'error');
             return;
         }
 
@@ -396,12 +398,41 @@
         lastUpdateTimes[name] = now;
         saveLastUpdateTimes(lastUpdateTimes);
 
-        showMessage(`${name} hat seinen Aussetzer-Counter auf ${scores[name]} erhöht.`, 'success');
+        showMessage(`${name} hat seinen Aussetzer-Counter auf ${scores[name]} erhoeht.`, 'success');
+        renderTable();
+    }
+
+    // **NEU**: Geld-Einzug-Logik (nur Sandro)
+    function increaseMoney() {
+        if (!currentUser || !(currentUser === 'Sandro' || currentUser === 'Sandro ')) {
+            showMessage('Nur Sandro darf diesen Counter erhoehen!', 'error');
+            return;
+        }
+
+        const confirmation = confirm("Sicher, dass du den Geld-Einzug erhoehen willst? Dies kann nicht rueckgaengig gemacht werden!");
+        if (!confirmation) {
+            showMessage('Vorgang abgebrochen.', 'error');
+            return; 
+        }
+
+        const now = new Date().getTime();
+        const lastTime = getMoneyLastUpdate();
+        const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
+
+        if (now - lastTime < TWENTY_FOUR_HOURS_MS) {
+            showMessage("Nur einmal pro 24 Stunden moeglich.", 'error');
+            return;
+        }
+
+        const n = getMoneyCount() + 1;
+        saveMoneyCount(n);
+        saveMoneyLastUpdate(now);
+
+        showMessage(`Geld-Einzug wurde auf ${n} erhoeht.`, 'success');
         renderTable();
     }
 
     // --- Tabellen-Logik ---
-
     function renderTable() {
         const scores = getScores();
         const tableBody = document.getElementById('score-table-body');
@@ -421,11 +452,10 @@
             } else { // Nach Score sortieren (Zahl)
                 comparison = valA - valB;
             }
-
             return currentSortDirection === 'asc' ? comparison : comparison * -1;
         });
 
-        // Tabelle füllen
+        // Normale Nutzerzeilen
         data.forEach(([name, score]) => {
             const row = tableBody.insertRow();
             
@@ -448,13 +478,39 @@
             button.textContent = `+1 für ${name}`;
             button.onclick = () => increaseCounter(name);
             
-            // Button nur für den eingeloggten Benutzer anzeigen und aktivieren
+            // Button nur für den eingeloggten Benutzer anzeigen
             if (currentUser === name) {
                 cellAction.appendChild(button);
             } else {
                 cellAction.innerHTML = '<span style="color: #95a5a6; font-size: 12px;">Nur eigener Counter</span>';
             }
         });
+
+        // **NEU**: Zusatzeintrag unten: "Geld eingezogen N mal"
+        const moneyRow = tableBody.insertRow();
+        const moneyCount = getMoneyCount();
+
+        const cellName = moneyRow.insertCell();
+        cellName.textContent = 'Geld eingezogen';
+        cellName.setAttribute('data-label', 'Name:');
+
+        const cellInfo = moneyRow.insertCell();
+        cellInfo.innerHTML = `Wurde <strong>${moneyCount}</strong> mal eingezogen`;
+        cellInfo.setAttribute('data-label', 'Aussetzer:');
+
+        const cellAction = moneyRow.insertCell();
+        cellAction.setAttribute('data-label', 'Aktion:');
+
+        // Button nur für Sandro (akzeptiert optionales Leerzeichen)
+        if (currentUser === 'Sandro' || currentUser === 'Sandro ') {
+            const btn = document.createElement('button');
+            btn.className = 'increase-btn';
+            btn.textContent = '+1 Geld eingezogen';
+            btn.onclick = increaseMoney;
+            cellAction.appendChild(btn);
+        } else {
+            cellAction.innerHTML = '<span style="color: #95a5a6; font-size: 12px;">Nur Sandro darf das aendern</span>';
+        }
     }
     
     function sortTable(columnIndex) {
