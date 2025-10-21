@@ -1,14 +1,17 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Beachfeld Aussetzer-Tracker</title>
-  <!-- Wenn du auf GitHub Pages in einem Repo-Namespace hostest, passe das ggf. an, z. B. "/dein-repo/". -->
-  <base href="/Beachfeld/">
+  <!-- <base href="/Beachfeld/">  <-- kannst du weglassen; wird nicht gebraucht -->
+  <!-- Cache kill, damit du immer die frische Version siehst -->
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
   <style>
     body { font-family: 'Arial', sans-serif; background:#f4f7f6; color:#333; margin:0; padding:20px; display:flex; justify-content:center; align-items:flex-start; min-height:100vh; }
-    .container { background:#fff; padding:30px; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,.1); width:100%; max-width:600px; }
+    .container { background:#fff; padding:30px; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,.1); width:100%; max-width:900px; }
     h1 { color:#2c3e50; text-align:center; margin-bottom:30px; border-bottom:2px solid #ecf0f1; padding-bottom:10px; }
     #login-section { display:flex; flex-direction:column; gap:15px; padding:20px; border:1px dashed #bdc3c7; border-radius:8px; text-align:center; }
     select, button { padding:12px; border-radius:6px; font-size:16px; cursor:pointer; transition:background-color .3s, transform .1s; }
@@ -29,6 +32,8 @@
     .message { padding:10px; margin-bottom:15px; border-radius:6px; font-weight:bold; display:none; text-align:center; }
     .message.error { background:#f9e3e3; color:#c0392b; border:1px solid #c0392b; }
     .message.success { background:#e3f9e3; color:#27ae60; border:1px solid #27ae60; }
+    .message.info { background:#e7f2ff; color:#1266b3; border:1px solid #1266b3; }
+
     @media (max-width:600px){
       body{padding:10px;} .container{padding:20px 15px;} #app-header{flex-direction:column; gap:10px; text-align:center;}
       th,td{padding:10px; font-size:14px;} table, thead, tbody, th, td, tr{display:block;}
@@ -43,8 +48,8 @@
 </head>
 <body>
 <div class="container">
-  <h1>Beachfeld Aussetzer-Tracker 🏐 (v2)</h1>
-  <div id="message-area" class="message error"></div>
+  <h1>Beachfeld Aussetzer-Tracker 🏐 <span style="font-size:16px;color:#8e8e8e;">v2</span></h1>
+  <div id="message-area" class="message info"></div>
 
   <!-- LOGIN -->
   <section id="login-section">
@@ -81,15 +86,15 @@
   </section>
 </div>
 
-<!-- Firebase + Firestore (v10 modular) -->
+<!-- Firebase + Firestore -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-app.js";
   import {
-    getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot,
+    getFirestore, doc, getDoc, setDoc, onSnapshot,
     collection, getDocs, serverTimestamp, runTransaction
   } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore.js";
 
-  // ==== DEINE KONFIG (eingesetzt aus deinem Screenshot) ====
+  // ---- Deine Firebase Config
   const firebaseConfig = {
     apiKey: "AIzaSyA5hSSHfMLHWEWuQK_RjIkDB9p6B1VZIf8",
     authDomain: "beachfeld-f22ad.firebaseapp.com",
@@ -100,26 +105,32 @@
     measurementId: "G-7R78DEW1VY"
   };
 
-  const app = initializeApp(firebaseConfig);
-  const db  = getFirestore(app);
-
-  // ===== App-Logik =====
+  // ---- App-Status
   const USERS = ["Sandro", "Norman", "Florian", "Felix", "Elias"];
-  const STORAGE_KEY_USER = 'aussetzer_tracker_user'; // nur fuer Auto-Login
-
+  const STORAGE_KEY_USER = 'aussetzer_tracker_user';
   let currentUser = null;
   let currentSortColumn = 1;
   let currentSortDirection = 'desc';
 
-  function showMessage(text, type='error'){
+  // ---- UI Helpers
+  function showMessage(text, type='info'){
     const el = document.getElementById('message-area');
-    el.textContent = text; el.className = `message ${type}`; el.style.display='block';
-    setTimeout(() => { el.style.display='none'; }, 5000);
+    el.textContent = text;
+    el.className = `message ${type}`;
+    el.style.display='block';
   }
+  function hideMessage(){ document.getElementById('message-area').style.display='none'; }
 
+  // ---- Render: immer sofort was anzeigen (Fallback 0er)
   function renderTableWith(scoresObj, moneyCount){
     const tbody = document.getElementById('score-table-body');
     tbody.innerHTML = '';
+
+    // fallback: wenn nichts kommt, baue Objekt aus USERS
+    if(!scoresObj || typeof scoresObj !== 'object'){
+      scoresObj = {};
+      USERS.forEach(u => scoresObj[u] = { count: 0, last_update: null });
+    }
 
     let data = Object.entries(scoresObj); // [ [name, {count,last_update}], ... ]
     data.sort((a,b) => {
@@ -167,34 +178,55 @@
     }
   }
 
-  // Firestore Helpers
+  // ---- Firestore helpers (robust, mit Fehleranzeige)
+  let app, db;
+  try {
+    app = initializeApp(firebaseConfig);
+    db  = getFirestore(app);
+  } catch (e) {
+    console.error('Firebase init error:', e);
+    showMessage('Firebase-Initialisierung fehlgeschlagen. Tabelle zeigt lokale 0er. Prüfe deine Projekt-ID/Konsole.', 'error');
+  }
+
   async function ensureInitialDocs(){
-    // Nutzer-Dokumente initialisieren (count=0, falls nicht vorhanden)
-    await Promise.all(USERS.map(async name => {
-      const ref = doc(db, 'scores', name);
-      const snap = await getDoc(ref);
-      if(!snap.exists()){
-        await setDoc(ref, { count: 0, last_update: null });
+    if(!db) return;
+    try{
+      await Promise.all(USERS.map(async name => {
+        const ref = doc(db, 'scores', name);
+        const snap = await getDoc(ref);
+        if(!snap.exists()){
+          await setDoc(ref, { count: 0, last_update: null });
+        }
+      }));
+      const mref = doc(db, 'meta', 'money');
+      const msnap = await getDoc(mref);
+      if(!msnap.exists()){
+        await setDoc(mref, { count: 0 });
       }
-    }));
-    // Money doc
-    const mref = doc(db, 'meta', 'money');
-    const msnap = await getDoc(mref);
-    if(!msnap.exists()){
-      await setDoc(mref, { count: 0 });
+    } catch(e){
+      console.error('ensureInitialDocs error:', e);
+      showMessage('Kann Firestore nicht beschreiben/lesen (Rules/Offline?). Tabelle zeigt lokale 0er.', 'error');
     }
   }
 
   async function getAllScoresObj(){
-    const coll = collection(db, 'scores');
-    const snaps = await getDocs(coll);
     const obj = {};
-    snaps.forEach(d => { obj[d.id] = d.data(); });
-    // Stelle sicher, dass alle USERS einen Eintrag haben (0 wenn fehlend)
-    USERS.forEach(u => { if(!(u in obj)) obj[u] = { count: 0, last_update: null }; });
-    return obj;
+    if(!db) { USERS.forEach(u => obj[u]={count:0,last_update:null}); return obj; }
+    try{
+      const coll = collection(db, 'scores');
+      const snaps = await getDocs(coll);
+      snaps.forEach(d => { obj[d.id] = d.data(); });
+      USERS.forEach(u => { if(!(u in obj)) obj[u] = { count: 0, last_update: null }; });
+      return obj;
+    } catch(e){
+      console.error('getAllScoresObj error:', e);
+      showMessage('Fehler beim Laden aus Firestore. Zeige lokale 0er.', 'error');
+      USERS.forEach(u => obj[u]={count:0,last_update:null});
+      return obj;
+    }
   }
 
+  // ---- Login / Logout
   function saveCurrentUser(name){ localStorage.setItem(STORAGE_KEY_USER, name); }
   function deleteCurrentUser(){ localStorage.removeItem(STORAGE_KEY_USER); }
 
@@ -205,7 +237,10 @@
       document.getElementById('current-user-display').textContent = currentUser;
       document.getElementById('login-section').style.display='none';
       document.getElementById('app-section').style.display='block';
+      // sofort Platzhalter anzeigen
+      renderTableWith(null, 0);
       await ensureInitialDocs();
+      await attachRealtime(); // startet Listener und macht erstes refresh
     } else {
       currentUser = null;
       document.getElementById('login-section').style.display='block';
@@ -219,26 +254,26 @@
     if(!name){ msg.textContent='Bitte waehle deinen Namen aus!'; msg.style.display='block'; return; }
     saveCurrentUser(name);
     await checkLogin();
-    await refreshOnce();
   };
 
   window.logout = async function(){
     deleteCurrentUser();
+    hideMessage();
     await checkLogin();
-    await refreshOnce();
   };
 
-  window.sortTable = function(columnIndex){
+  window.sortTable = async function(columnIndex){
     document.querySelectorAll('th').forEach(th => th.classList.remove('sorted-asc','sorted-desc'));
     if(columnIndex === currentSortColumn) currentSortDirection = (currentSortDirection==='asc'?'desc':'asc');
     else { currentSortColumn = columnIndex; currentSortDirection = (columnIndex===0?'asc':'desc'); }
-    refreshOnce();
+    await refreshOnce();
   };
 
-  // Increase Counter (24h-Sperre Client-seitig; Serverwert wird nie auf 0 gesetzt)
+  // ---- Increase Counter (inkl. 24h-Sperre)
   window.increaseCounter = async function(name){
     if(!currentUser || name !== currentUser){ showMessage('Fehler: Du darfst nur deinen eigenen Counter erhoehen!', 'error'); return; }
     if(!confirm("Sicher, dass du den Counter erhoehen willst? Dies kann nicht rueckgaengig gemacht werden!")){ showMessage('Vorgang abgebrochen.', 'error'); return; }
+    if(!db){ showMessage('Kein Firestore verfuegbar.', 'error'); return; }
 
     const ref = doc(db, 'scores', name);
     try{
@@ -248,24 +283,26 @@
         if(snap.exists()){
           const d = snap.data();
           count = d.count || 0;
-          last  = d.last_update ? new Date(d.last_update.seconds*1000) : null;
+          if(d.last_update?.seconds) last = new Date(d.last_update.seconds*1000);
         }
         const now = new Date();
         const ok = !last || (now - last) >= 24*60*60*1000;
-        if(!ok) throw new Error('24h-Sperre aktiv');
+        if(!ok) throw new Error('24h');
         tx.set(ref, { count: count+1, last_update: serverTimestamp() }, { merge: true });
       });
       showMessage(`${name} hat seinen Aussetzer-Counter erhoeht.`, 'success');
     } catch(e){
+      console.error('increaseCounter error:', e);
       if(String(e).includes('24h')) showMessage('Hey, hier wird nicht gecheated! Nur 1x pro 24 Stunden.', 'error');
-      else showMessage('Fehler beim Aktualisieren.', 'error');
+      else showMessage('Fehler beim Aktualisieren (Rules/Netzwerk).', 'error');
     }
   };
 
-  // Geld Einzug
+  // ---- Geld Einzug
   window.increaseMoney = async function(){
     if(!currentUser){ showMessage('Bitte zuerst einloggen.', 'error'); return; }
     if(!confirm("Sicher, dass du den Geld-Einzug erhoehen willst? Dies kann nicht rueckgaengig gemacht werden!")){ showMessage('Vorgang abgebrochen.', 'error'); return; }
+    if(!db){ showMessage('Kein Firestore verfuegbar.', 'error'); return; }
 
     const mref = doc(db, 'meta', 'money');
     try{
@@ -273,25 +310,35 @@
         const snap = await tx.get(mref);
         const curr = snap.exists() ? (snap.data().count||0) : 0;
         if(!snap.exists()) tx.set(mref, { count: 0 });
-        tx.update(mref, { count: curr+1 });
+        tx.set(mref, { count: curr+1 }, { merge: true });
       });
       showMessage('Geld-Einzug erhoeht.', 'success');
     } catch(e){
-      showMessage('Fehler beim Geld-Einzug.', 'error');
+      console.error('increaseMoney error:', e);
+      showMessage('Fehler beim Geld-Einzug (Rules/Netzwerk).', 'error');
     }
   };
 
-  // Realtime-Listener: alle sehen alles ohne Reload
+  // ---- Realtime + Initial Refresh
   async function attachRealtime(){
-    await ensureInitialDocs();
-    // Alle Nutzer-Dokumente
-    USERS.forEach(name => {
-      const ref = doc(db, 'scores', name);
-      onSnapshot(ref, () => { refreshOnce(); });
-    });
-    // Money
-    const mref = doc(db, 'meta', 'money');
-    onSnapshot(mref, () => { refreshOnce(); });
+    if(!db) { await refreshOnce(); return; }
+
+    try{
+      // Einmal initial refresh
+      await refreshOnce();
+
+      // Live-Listener fuer jeden Nutzer
+      USERS.forEach(name => {
+        const ref = doc(db, 'scores', name);
+        onSnapshot(ref, () => { refreshOnce(); });
+      });
+      // Live-Listener fuers Money
+      const mref = doc(db, 'meta', 'money');
+      onSnapshot(mref, () => { refreshOnce(); });
+    } catch(e){
+      console.error('attachRealtime error:', e);
+      showMessage('Konnte Realtime-Listener nicht setzen. Zeige statische Werte.', 'error');
+    }
   }
 
   let refreshing = false;
@@ -300,20 +347,22 @@
     refreshing = true;
     try{
       const scores = await getAllScoresObj();
-      const mref = doc(db, 'meta', 'money');
-      const msnap = await getDoc(mref);
-      const money = msnap.exists()? (msnap.data().count||0) : 0;
+      let money = 0;
+      if(db){
+        const mref = doc(db, 'meta', 'money');
+        const msnap = await getDoc(mref);
+        if(msnap.exists()) money = msnap.data().count||0;
+      }
       renderTableWith(scores, money);
     } finally {
       refreshing = false;
     }
   }
 
-  // Start
+  // ---- Start
   window.addEventListener('load', async () => {
     await checkLogin();
-    await attachRealtime();
-    await refreshOnce();
+    if(currentUser){ await refreshOnce(); }
   });
 </script>
 </body>
