@@ -1,521 +1,320 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Beachfeld Aussetzer-Tracker</title>
-    <!-- Um mögliche Pfadprobleme bei GitHub Pages zu beheben -->
-    <base href="/Beachfeld/">
-    <style>
-        /* CSS-STILE FÜR OPTIK UND RESPONSIVENESS */
-        body {
-            font-family: 'Arial', sans-serif;
-            background-color: #f4f7f6;
-            color: #333;
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
-            min-height: 100vh;
-        }
-        .container {
-            background-color: #ffffff;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-            width: 100%;
-            max-width: 600px;
-        }
-        h1 {
-            color: #2c3e50;
-            text-align: center;
-            margin-bottom: 30px;
-            border-bottom: 2px solid #ecf0f1;
-            padding-bottom: 10px;
-        }
-
-        /* --- Login-Bereich --- */
-        #login-section {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            padding: 20px;
-            border: 1px dashed #bdc3c7;
-            border-radius: 8px;
-            text-align: center;
-        }
-        select, button {
-            padding: 12px;
-            border-radius: 6px;
-            font-size: 16px;
-            cursor: pointer;
-            transition: background-color 0.3s, transform 0.1s;
-        }
-        select {
-            border: 1px solid #ccc;
-            background-color: #f9f9f9;
-        }
-        .login-btn {
-            background-color: #3498db;
-            color: white;
-            border: none;
-        }
-        .login-btn:hover {
-            background-color: #2980b9;
-            transform: translateY(-1px);
-        }
-        #login-message {
-            color: #e74c3c;
-            font-weight: bold;
-            display: none;
-        }
-        
-        /* --- App-Bereich --- */
-        #app-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            border-bottom: 1px solid #ecf0f1;
-            padding-bottom: 15px;
-        }
-        .logout-btn {
-            background-color: #e74c3c;
-            color: white;
-            border: none;
-            padding: 8px 15px;
-        }
-        .logout-btn:hover {
-            background-color: #c0392b;
-        }
-
-        /* --- Tabelle --- */
-        table {
-            width: 100%;
-            border-collapse: separate;
-            border-spacing: 0 10px;
-            margin-top: 10px;
-        }
-        th, td {
-            text-align: left;
-            padding: 15px;
-        }
-        th {
-            background-color: #f1f1f1;
-            color: #555;
-            cursor: pointer;
-            font-size: 14px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        tr {
-            background-color: #ffffff;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-        }
-        tr:nth-child(odd) {
-            background-color: #fcfcfc;
-        }
-        .increase-btn {
-            background-color: #2ecc71;
-            color: white;
-            border: none;
-            padding: 10px 18px;
-        }
-        .increase-btn:hover {
-            background-color: #27ae60;
-        }
-        
-        /* --- Nachrichtenbereich --- */
-        .message {
-            padding: 10px;
-            margin-bottom: 15px;
-            border-radius: 6px;
-            font-weight: bold;
-            display: none;
-            text-align: center;
-        }
-        .message.error {
-            background-color: #f9e3e3;
-            color: #c0392b;
-            border: 1px solid #c0392b;
-        }
-        .message.success {
-            background-color: #e3f9e3;
-            color: #27ae60;
-            border: 1px solid #27ae60;
-        }
-
-        /* Responsive Anpassungen */
-        @media (max-width: 600px) {
-            body {
-                padding: 10px;
-            }
-            .container {
-                padding: 20px 15px;
-            }
-            #app-header {
-                flex-direction: column;
-                gap: 10px;
-                text-align: center;
-            }
-            th, td {
-                padding: 10px;
-                font-size: 14px;
-            }
-            table, thead, tbody, th, td, tr { 
-                display: block; 
-            }
-            thead tr { 
-                position: absolute;
-                top: -9999px;
-                left: -9999px;
-            }
-            tr {
-                border: 1px solid #ccc;
-                margin-bottom: 20px;
-                padding: 10px 0;
-            }
-            td {
-                border: none;
-                border-bottom: 1px solid #eee;
-                position: relative;
-                padding-left: 50%;
-                text-align: right;
-            }
-            td:before {
-                position: absolute;
-                top: 50%;
-                left: 6px;
-                width: 45%;
-                padding-right: 10px;
-                white-space: nowrap;
-                content: attr(data-label);
-                font-weight: bold;
-                text-align: left;
-                transform: translateY(-50%);
-            }
-            td:nth-of-type(1):before { content: "Name:"; }
-            td:nth-of-type(2):before { content: "Aussetzer:"; }
-            td:nth-of-type(3):before { content: "Aktion:"; }
-            .increase-btn {
-                width: 100%;
-                margin-top: 5px;
-            }
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Beachfeld Aussetzer-Tracker</title>
+  <!-- Wenn du auf GitHub Pages in einem Repo-Namespace hostest, passe das ggf. an, z. B. "/dein-repo/". -->
+  <base href="/Beachfeld/">
+  <style>
+    body { font-family: 'Arial', sans-serif; background:#f4f7f6; color:#333; margin:0; padding:20px; display:flex; justify-content:center; align-items:flex-start; min-height:100vh; }
+    .container { background:#fff; padding:30px; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,.1); width:100%; max-width:600px; }
+    h1 { color:#2c3e50; text-align:center; margin-bottom:30px; border-bottom:2px solid #ecf0f1; padding-bottom:10px; }
+    #login-section { display:flex; flex-direction:column; gap:15px; padding:20px; border:1px dashed #bdc3c7; border-radius:8px; text-align:center; }
+    select, button { padding:12px; border-radius:6px; font-size:16px; cursor:pointer; transition:background-color .3s, transform .1s; }
+    select { border:1px solid #ccc; background:#f9f9f9; }
+    .login-btn { background:#3498db; color:#fff; border:none; }
+    .login-btn:hover { background:#2980b9; transform:translateY(-1px); }
+    #login-message { color:#e74c3c; font-weight:bold; display:none; }
+    #app-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom:1px solid #ecf0f1; padding-bottom:15px; }
+    .logout-btn { background:#e74c3c; color:#fff; border:none; padding:8px 15px; }
+    .logout-btn:hover { background:#c0392b; }
+    table { width:100%; border-collapse:separate; border-spacing:0 10px; margin-top:10px; }
+    th, td { text-align:left; padding:15px; }
+    th { background:#f1f1f1; color:#555; cursor:pointer; font-size:14px; text-transform:uppercase; letter-spacing:.5px; }
+    tr { background:#fff; border-radius:8px; box-shadow:0 2px 5px rgba(0,0,0,.05); }
+    tr:nth-child(odd) { background:#fcfcfc; }
+    .increase-btn { background:#2ecc71; color:#fff; border:none; padding:10px 18px; }
+    .increase-btn:hover { background:#27ae60; }
+    .message { padding:10px; margin-bottom:15px; border-radius:6px; font-weight:bold; display:none; text-align:center; }
+    .message.error { background:#f9e3e3; color:#c0392b; border:1px solid #c0392b; }
+    .message.success { background:#e3f9e3; color:#27ae60; border:1px solid #27ae60; }
+    @media (max-width:600px){
+      body{padding:10px;} .container{padding:20px 15px;} #app-header{flex-direction:column; gap:10px; text-align:center;}
+      th,td{padding:10px; font-size:14px;} table, thead, tbody, th, td, tr{display:block;}
+      thead tr{position:absolute; top:-9999px; left:-9999px;}
+      tr{border:1px solid #ccc; margin-bottom:20px; padding:10px 0;}
+      td{border:none; border-bottom:1px solid #eee; position:relative; padding-left:50%; text-align:right;}
+      td:before{position:absolute; top:50%; left:6px; width:45%; padding-right:10px; white-space:nowrap; font-weight:bold; text-align:left; transform:translateY(-50%); content:attr(data-label);}
+      td:nth-of-type(1):before{content:"Name:";} td:nth-of-type(2):before{content:"Aussetzer:";} td:nth-of-type(3):before{content:"Aktion:";}
+      .increase-btn{width:100%; margin-top:5px;}
+    }
+  </style>
 </head>
 <body>
-
 <div class="container">
-    <h1>Beachfeld Aussetzer-Tracker 🏐</h1>
+  <h1>Beachfeld Aussetzer-Tracker 🏐</h1>
+  <div id="message-area" class="message error"></div>
 
-    <!-- Meldungsbereich -->
-    <div id="message-area" class="message error"></div>
+  <!-- LOGIN -->
+  <section id="login-section">
+    <h2>Anmelden</h2>
+    <div id="login-message"></div>
+    <select id="name-select">
+      <option value="">-- Wähle deinen Namen --</option>
+      <option value="Sandro">Sandro</option>
+      <option value="Norman">Norman</option>
+      <option value="Florian">Florian</option>
+      <option value="Felix">Felix</option>
+      <option value="Elias">Elias</option>
+    </select>
+    <button class="login-btn" onclick="login()">Anmelden</button>
+  </section>
 
-    <!-- 1. LOGIN-BEREICH -->
-    <section id="login-section">
-        <h2>Anmelden</h2>
-        <div id="login-message"></div>
-        <select id="name-select">
-            <option value="">-- Wähle deinen Namen --</option>
-            <option value="Sandro">Sandro</option>
-            <option value="Norman">Norman</option>
-            <option value="Florian">Florian</option>
-            <option value="Felix">Felix</option>
-            <option value="Elias">Elias</option>
-        </select>
-        <button class="login-btn" onclick="login()">Anmelden</button>
-    </section>
+  <!-- APP -->
+  <section id="app-section" style="display:none;">
+    <div id="app-header">
+      <div> Eingeloggt als: <strong id="current-user-display"></strong> </div>
+      <button class="logout-btn" onclick="logout()">Abmelden</button>
+    </div>
 
-    <!-- 2. ANWENDUNGS-BEREICH (wird nach Login sichtbar) -->
-    <section id="app-section" style="display:none;">
-        <div id="app-header">
-            <div>
-                Eingeloggt als: <strong id="current-user-display"></strong>
-            </div>
-            <button class="logout-btn" onclick="logout()">Abmelden</button>
-        </div>
-
-        <table>
-            <thead>
-                <tr>
-                    <th onclick="sortTable(0)">Name ↕</th>
-                    <th onclick="sortTable(1)">Aussetzer ↕</th>
-                    <th>Aktion</th>
-                </tr>
-            </thead>
-            <tbody id="score-table-body">
-                <!-- Tabelle wird durch JavaScript gefüllt -->
-            </tbody>
-        </table>
-    </section>
+    <table>
+      <thead>
+        <tr>
+          <th onclick="sortTable(0)">Name ↕</th>
+          <th onclick="sortTable(1)">Aussetzer ↕</th>
+          <th>Aktion</th>
+        </tr>
+      </thead>
+      <tbody id="score-table-body"></tbody>
+    </table>
+  </section>
 </div>
 
-<!-- JAVASCRIPT LOGIK -->
-<script>
-    // --- Konfiguration und Initialisierung ---
-    const USERS = ["Sandro", "Norman", "Florian", "Felix", "Elias"]; 
-    const INITIAL_SCORES = USERS.reduce((acc, name) => {
-        acc[name] = 0;
-        return acc;
-    }, {});
-    
-    // Keys für LocalStorage 
-    const STORAGE_KEY_USER = 'aussetzer_tracker_user';
-    const STORAGE_KEY_SCORES = 'aussetzer_tracker_scores';
-    const STORAGE_KEY_LAST_UPDATE = 'aussetzer_tracker_last_update';
+<!-- Firebase + Firestore (v10 modular) -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-app.js";
+  import {
+    getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot,
+    collection, getDocs, serverTimestamp, runTransaction
+  } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore.js";
 
-    // **NEU**: Geld-Einzug eigene Keys
-    const STORAGE_KEY_MONEY = 'aussetzer_tracker_money';
-    
-    let currentUser = null;
-    let currentSortColumn = 1; 
-    let currentSortDirection = 'desc'; 
+  // ==== DEINE KONFIG (eingesetzt aus deinem Screenshot) ====
+  const firebaseConfig = {
+    apiKey: "AIzaSyA5hSSHfMLHWEWuQK_RjIkDB9p6B1VZIf8",
+    authDomain: "beachfeld-f22ad.firebaseapp.com",
+    projectId: "beachfeld-f22ad",
+    storageBucket: "beachfeld-f22ad.firebasestorage.app",
+    messagingSenderId: "976105561281",
+    appId: "1:976105561281:web:dc9eea18aa530e387c8840",
+    measurementId: "G-7R78DEW1VY"
+  };
 
-    // --- LocalStorage Funktionen ---
-    function getScores() {
-        const storedScores = localStorage.getItem(STORAGE_KEY_SCORES);
-        if (storedScores) {
-            return JSON.parse(storedScores);
+  const app = initializeApp(firebaseConfig);
+  const db  = getFirestore(app);
+
+  // ===== App-Logik =====
+  const USERS = ["Sandro", "Norman", "Florian", "Felix", "Elias"];
+  const STORAGE_KEY_USER = 'aussetzer_tracker_user'; // nur fuer Auto-Login
+
+  let currentUser = null;
+  let currentSortColumn = 1;
+  let currentSortDirection = 'desc';
+
+  function showMessage(text, type='error'){
+    const el = document.getElementById('message-area');
+    el.textContent = text; el.className = `message ${type}`; el.style.display='block';
+    setTimeout(() => { el.style.display='none'; }, 5000);
+  }
+
+  function renderTableWith(scoresObj, moneyCount){
+    const tbody = document.getElementById('score-table-body');
+    tbody.innerHTML = '';
+
+    let data = Object.entries(scoresObj); // [ [name, {count,last_update}], ... ]
+    data.sort((a,b) => {
+      const valA = (currentSortColumn===0) ? a[0] : (a[1]?.count||0);
+      const valB = (currentSortColumn===0) ? b[0] : (b[1]?.count||0);
+      let cmp = (currentSortColumn===0) ? valA.localeCompare(valB) : (valA - valB);
+      return currentSortDirection==='asc' ? cmp : -cmp;
+    });
+
+    data.forEach(([name, obj]) => {
+      const row = tbody.insertRow();
+
+      const c1 = row.insertCell();
+      c1.textContent = name;
+      c1.setAttribute('data-label','Name:');
+
+      const count = obj?.count ?? 0;
+      const c2 = row.insertCell();
+      c2.innerHTML = `Hat <strong>${count}</strong> mal ausgesetzt`;
+      c2.setAttribute('data-label','Aussetzer:');
+
+      const c3 = row.insertCell();
+      c3.setAttribute('data-label','Aktion:');
+
+      const btn = document.createElement('button');
+      btn.className='increase-btn';
+      btn.textContent = `+1 für ${name}`;
+      btn.onclick = () => increaseCounter(name);
+
+      if(currentUser === name) c3.appendChild(btn);
+      else c3.innerHTML = '<span style="color:#95a5a6; font-size:12px;">Nur eigener Counter</span>';
+    });
+
+    // Geld-Zeile
+    const moneyRow = tbody.insertRow();
+    const m1 = moneyRow.insertCell(); m1.textContent='Geld eingezogen'; m1.setAttribute('data-label','Name:');
+    const m2 = moneyRow.insertCell(); m2.innerHTML = `Wurde <strong>${moneyCount||0}</strong> mal eingezogen`; m2.setAttribute('data-label','Aussetzer:');
+    const m3 = moneyRow.insertCell(); m3.setAttribute('data-label','Aktion:');
+    if(currentUser){
+      const btn = document.createElement('button');
+      btn.className='increase-btn'; btn.textContent = '+1 Geld eingezogen';
+      btn.onclick = increaseMoney; m3.appendChild(btn);
+    } else {
+      m3.innerHTML = '<span style="color:#95a5a6; font-size:12px;">Bitte einloggen</span>';
+    }
+  }
+
+  // Firestore Helpers
+  async function ensureInitialDocs(){
+    // Nutzer-Dokumente initialisieren (count=0, falls nicht vorhanden)
+    await Promise.all(USERS.map(async name => {
+      const ref = doc(db, 'scores', name);
+      const snap = await getDoc(ref);
+      if(!snap.exists()){
+        await setDoc(ref, { count: 0, last_update: null });
+      }
+    }));
+    // Money doc
+    const mref = doc(db, 'meta', 'money');
+    const msnap = await getDoc(mref);
+    if(!msnap.exists()){
+      await setDoc(mref, { count: 0 });
+    }
+  }
+
+  async function getAllScoresObj(){
+    const coll = collection(db, 'scores');
+    const snaps = await getDocs(coll);
+    const obj = {};
+    snaps.forEach(d => { obj[d.id] = d.data(); });
+    // Stelle sicher, dass alle USERS einen Eintrag haben (0 wenn fehlend)
+    USERS.forEach(u => { if(!(u in obj)) obj[u] = { count: 0, last_update: null }; });
+    return obj;
+  }
+
+  function saveCurrentUser(name){ localStorage.setItem(STORAGE_KEY_USER, name); }
+  function deleteCurrentUser(){ localStorage.removeItem(STORAGE_KEY_USER); }
+
+  async function checkLogin(){
+    const storedUser = localStorage.getItem(STORAGE_KEY_USER);
+    if(storedUser && USERS.includes(storedUser)){
+      currentUser = storedUser;
+      document.getElementById('current-user-display').textContent = currentUser;
+      document.getElementById('login-section').style.display='none';
+      document.getElementById('app-section').style.display='block';
+      await ensureInitialDocs();
+    } else {
+      currentUser = null;
+      document.getElementById('login-section').style.display='block';
+      document.getElementById('app-section').style.display='none';
+    }
+  }
+
+  window.login = async function(){
+    const name = document.getElementById('name-select').value;
+    const msg  = document.getElementById('login-message');
+    if(!name){ msg.textContent='Bitte waehle deinen Namen aus!'; msg.style.display='block'; return; }
+    saveCurrentUser(name);
+    await checkLogin();
+    await refreshOnce();
+  };
+
+  window.logout = async function(){
+    deleteCurrentUser();
+    await checkLogin();
+    await refreshOnce();
+  };
+
+  window.sortTable = function(columnIndex){
+    document.querySelectorAll('th').forEach(th => th.classList.remove('sorted-asc','sorted-desc'));
+    if(columnIndex === currentSortColumn) currentSortDirection = (currentSortDirection==='asc'?'desc':'asc');
+    else { currentSortColumn = columnIndex; currentSortDirection = (columnIndex===0?'asc':'desc'); }
+    refreshOnce();
+  };
+
+  // Increase Counter (24h-Sperre Client-seitig; Serverwert wird nie auf 0 gesetzt)
+  window.increaseCounter = async function(name){
+    if(!currentUser || name !== currentUser){ showMessage('Fehler: Du darfst nur deinen eigenen Counter erhoehen!', 'error'); return; }
+    if(!confirm("Sicher, dass du den Counter erhoehen willst? Dies kann nicht rueckgaengig gemacht werden!")){ showMessage('Vorgang abgebrochen.', 'error'); return; }
+
+    const ref = doc(db, 'scores', name);
+    try{
+      await runTransaction(db, async (tx) => {
+        const snap = await tx.get(ref);
+        let count = 0, last = null;
+        if(snap.exists()){
+          const d = snap.data();
+          count = d.count || 0;
+          last  = d.last_update ? new Date(d.last_update.seconds*1000) : null;
         }
-        return INITIAL_SCORES;
+        const now = new Date();
+        const ok = !last || (now - last) >= 24*60*60*1000;
+        if(!ok) throw new Error('24h-Sperre aktiv');
+        tx.set(ref, { count: count+1, last_update: serverTimestamp() }, { merge: true });
+      });
+      showMessage(`${name} hat seinen Aussetzer-Counter erhoeht.`, 'success');
+    } catch(e){
+      if(String(e).includes('24h')) showMessage('Hey, hier wird nicht gecheated! Nur 1x pro 24 Stunden.', 'error');
+      else showMessage('Fehler beim Aktualisieren.', 'error');
     }
-    function saveScores(scores) {
-        localStorage.setItem(STORAGE_KEY_SCORES, JSON.stringify(scores));
+  };
+
+  // Geld Einzug
+  window.increaseMoney = async function(){
+    if(!currentUser){ showMessage('Bitte zuerst einloggen.', 'error'); return; }
+    if(!confirm("Sicher, dass du den Geld-Einzug erhoehen willst? Dies kann nicht rueckgaengig gemacht werden!")){ showMessage('Vorgang abgebrochen.', 'error'); return; }
+
+    const mref = doc(db, 'meta', 'money');
+    try{
+      await runTransaction(db, async (tx) => {
+        const snap = await tx.get(mref);
+        const curr = snap.exists() ? (snap.data().count||0) : 0;
+        if(!snap.exists()) tx.set(mref, { count: 0 });
+        tx.update(mref, { count: curr+1 });
+      });
+      showMessage('Geld-Einzug erhoeht.', 'success');
+    } catch(e){
+      showMessage('Fehler beim Geld-Einzug.', 'error');
     }
-    function getLastUpdateTimes() {
-        const storedTimes = localStorage.getItem(STORAGE_KEY_LAST_UPDATE);
-        return storedTimes ? JSON.parse(storedTimes) : {};
+  };
+
+  // Realtime-Listener: alle sehen alles ohne Reload
+  async function attachRealtime(){
+    await ensureInitialDocs();
+    // Alle Nutzer-Dokumente
+    USERS.forEach(name => {
+      const ref = doc(db, 'scores', name);
+      onSnapshot(ref, () => { refreshOnce(); });
+    });
+    // Money
+    const mref = doc(db, 'meta', 'money');
+    onSnapshot(mref, () => { refreshOnce(); });
+  }
+
+  let refreshing = false;
+  async function refreshOnce(){
+    if(refreshing) return;
+    refreshing = true;
+    try{
+      const scores = await getAllScoresObj();
+      const mref = doc(db, 'meta', 'money');
+      const msnap = await getDoc(mref);
+      const money = msnap.exists()? (msnap.data().count||0) : 0;
+      renderTableWith(scores, money);
+    } finally {
+      refreshing = false;
     }
-    function saveLastUpdateTimes(times) {
-        localStorage.setItem(STORAGE_KEY_LAST_UPDATE, JSON.stringify(times));
-    }
+  }
 
-    // **NEU**: Geld-Einzug Getter/Setter
-    function getMoneyCount() {
-        const v = localStorage.getItem(STORAGE_KEY_MONEY);
-        return v ? parseInt(v, 10) : 0;
-    }
-    function saveMoneyCount(n) {
-        localStorage.setItem(STORAGE_KEY_MONEY, String(n));
-    }
-    // --- Anmelde- und UI-Funktionen ---
-    function saveCurrentUser(name) {
-        localStorage.setItem(STORAGE_KEY_USER, name);
-    }
-    function deleteCurrentUser() {
-        localStorage.removeItem(STORAGE_KEY_USER);
-    }
-    function checkLogin() {
-        const storedUser = localStorage.getItem(STORAGE_KEY_USER); 
-        
-        // Prüfen, ob ein gültiger Benutzer gespeichert wurde
-        if (storedUser && USERS.includes(storedUser)) {
-            currentUser = storedUser;
-            document.getElementById('current-user-display').textContent = currentUser;
-            document.getElementById('login-section').style.display = 'none';
-            document.getElementById('app-section').style.display = 'block';
-            renderTable();
-        } else {
-            currentUser = null;
-            document.getElementById('login-section').style.display = 'block';
-            document.getElementById('app-section').style.display = 'none';
-        }
-        hideMessage();
-    }
-    function login() {
-        const selectedName = document.getElementById('name-select').value;
-        const loginMessage = document.getElementById('login-message');
-        
-        if (!selectedName) {
-            loginMessage.textContent = 'Bitte wähle deinen Namen aus!';
-            loginMessage.style.display = 'block';
-            return;
-        }
-        // Speichere den ausgewählten Namen für den automatischen Login
-        saveCurrentUser(selectedName);
-        checkLogin();
-    }
-    function logout() {
-        deleteCurrentUser();
-        checkLogin();
-    }
-
-    function showMessage(text, type = 'error') {
-        const messageArea = document.getElementById('message-area');
-        messageArea.textContent = text;
-        messageArea.className = `message ${type}`;
-        messageArea.style.display = 'block';
-        setTimeout(hideMessage, 5000);
-    }
-    function hideMessage() {
-        document.getElementById('message-area').style.display = 'none';
-        document.getElementById('login-message').style.display = 'none';
-    }
-
-    // --- Counter-Logik (mit Bestätigungs-Dialog) ---
-    function increaseCounter(name) {
-        if (!currentUser || name !== currentUser) {
-            showMessage('Fehler: Du darfst nur deinen eigenen Counter erhoehen!', 'error');
-            return;
-        }
-
-        const confirmation = confirm("Sicher, dass du den Counter erhoehen willst? Dies kann nicht rueckgaengig gemacht werden!");
-        if (!confirmation) {
-            showMessage('Vorgang abgebrochen.', 'error');
-            return; 
-        }
-
-        // 24h-Sperr-Logik
-        const now = new Date().getTime();
-        const lastUpdateTimes = getLastUpdateTimes();
-        const lastTime = lastUpdateTimes[name] || 0;
-        const timeDiff = now - lastTime;
-        const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
-
-        if (timeDiff < TWENTY_FOUR_HOURS_MS) {
-            showMessage("Hey, hier wird nicht gecheated! Du kannst den Counter nur einmal pro 24 Stunden erhoehen.", 'error');
-            return;
-        }
-
-        // Counter erhöhen und speichern
-        const scores = getScores();
-        scores[name] = (scores[name] || 0) + 1;
-        saveScores(scores);
-
-        // Letzte Updatezeit speichern
-        lastUpdateTimes[name] = now;
-        saveLastUpdateTimes(lastUpdateTimes);
-
-        showMessage(`${name} hat seinen Aussetzer-Counter auf ${scores[name]} erhoeht.`, 'success');
-        renderTable();
-    }
-
-    // **NEU**: Geld-Einzug-Logik
-    function increaseMoney() {
-        if (!currentUser) {
-            showMessage('Bitte zuerst einloggen.', 'error');
-            return;
-        }
-    
-        const confirmation = confirm("Sicher, dass du den Geld-Einzug erhoehen willst? Dies kann nicht rueckgaengig gemacht werden!");
-        if (!confirmation) {
-            showMessage('Vorgang abgebrochen.', 'error');
-            return; 
-        }
-    
-        const n = getMoneyCount() + 1;
-        saveMoneyCount(n);
-    
-        showMessage(`Geld-Einzug wurde auf ${n} erhoeht.`, 'success');
-        renderTable();
-    }
-
-
-    // --- Tabellen-Logik ---
-    function renderTable() {
-        const scores = getScores();
-        const tableBody = document.getElementById('score-table-body');
-        tableBody.innerHTML = '';
-        
-        // Daten für Sortierung vorbereiten
-        let data = Object.entries(scores).map(([name, score]) => [name, score]);
-
-        // Sortierung anwenden
-        data.sort((a, b) => {
-            const valA = a[currentSortColumn];
-            const valB = b[currentSortColumn];
-
-            let comparison = 0;
-            if (currentSortColumn === 0) { // Nach Name sortieren (String)
-                comparison = valA.localeCompare(valB);
-            } else { // Nach Score sortieren (Zahl)
-                comparison = valA - valB;
-            }
-            return currentSortDirection === 'asc' ? comparison : comparison * -1;
-        });
-
-        // Normale Nutzerzeilen
-        data.forEach(([name, score]) => {
-            const row = tableBody.insertRow();
-            
-            // Zelle 1: Name
-            const cellName = row.insertCell();
-            cellName.textContent = name;
-            cellName.setAttribute('data-label', 'Name:');
-            
-            // Zelle 2: Aussetzer
-            const cellScore = row.insertCell();
-            cellScore.innerHTML = `Hat <strong>${score}</strong> mal ausgesetzt`;
-            cellScore.setAttribute('data-label', 'Aussetzer:');
-            
-            // Zelle 3: Aktion
-            const cellAction = row.insertCell();
-            cellAction.setAttribute('data-label', 'Aktion:');
-            
-            const button = document.createElement('button');
-            button.className = 'increase-btn';
-            button.textContent = `+1 für ${name}`;
-            button.onclick = () => increaseCounter(name);
-            
-            // Button nur für den eingeloggten Benutzer anzeigen
-            if (currentUser === name) {
-                cellAction.appendChild(button);
-            } else {
-                cellAction.innerHTML = '<span style="color: #95a5a6; font-size: 12px;">Nur eigener Counter</span>';
-            }
-        });
-
-        // **NEU**: Zusatzeintrag unten: "Geld eingezogen N mal"
-        const moneyRow = tableBody.insertRow();
-        const moneyCount = getMoneyCount();
-
-        const cellName = moneyRow.insertCell();
-        cellName.textContent = 'Geld eingezogen';
-        cellName.setAttribute('data-label', 'Name:');
-
-        const cellInfo = moneyRow.insertCell();
-        cellInfo.innerHTML = `Wurde <strong>${moneyCount}</strong> mal eingezogen`;
-        cellInfo.setAttribute('data-label', 'Aussetzer:');
-
-        const cellAction = moneyRow.insertCell();
-        cellAction.setAttribute('data-label', 'Aktion:');
-
-        // Button für alle zum Geld einziehen
-        if (currentUser) {
-            const btn = document.createElement('button');
-            btn.className = 'increase-btn';
-            btn.textContent = '+1 Geld eingezogen';
-            btn.onclick = increaseMoney;
-            cellAction.appendChild(btn);
-        } else {
-            cellAction.innerHTML = '<span style="color: #95a5a6; font-size: 12px;">Bitte einloggen</span>';
-        }
-    }
-    
-    function sortTable(columnIndex) {
-        // Setze Sortierpfeile zurück
-        document.querySelectorAll('th').forEach(th => th.classList.remove('sorted-asc', 'sorted-desc'));
-
-        if (columnIndex === currentSortColumn) {
-            currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
-        } else {
-            currentSortColumn = columnIndex;
-            currentSortDirection = columnIndex === 0 ? 'asc' : 'desc';
-        }
-        
-        // Markiere die aktuelle Sortierspalte
-        const currentHeader = document.querySelectorAll('th')[columnIndex];
-        currentHeader.classList.add(`sorted-${currentSortDirection}`);
-        
-        renderTable();
-    }
-
-    // --- Start der Anwendung ---
-    window.onload = checkLogin;
+  // Start
+  window.addEventListener('load', async () => {
+    await checkLogin();
+    await attachRealtime();
+    await refreshOnce();
+  });
 </script>
-
 </body>
 </html>
